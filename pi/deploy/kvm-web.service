@@ -1,0 +1,16 @@
+[Unit]
+Description=DIY KVM Web Server (video + keyboard + power/reset relay)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/wseo
+ExecStart=/usr/bin/python3 /home/wseo/kvm_web.py
+Restart=always
+RestartSec=5
+User=wseo
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

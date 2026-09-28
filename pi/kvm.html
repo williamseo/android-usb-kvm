@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>b550 KVM</title>
+<style>
+  html,body{margin:0;height:100%;background:#111;color:#ddd;font-family:sans-serif}
+  #bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:6px 10px;background:#1b1b1b}
+  #bar button{background:#333;color:#eee;border:1px solid #555;border-radius:4px;padding:4px 10px;cursor:pointer}
+  #bar button:hover{background:#444}
+  #dot{width:10px;height:10px;border-radius:50%;background:#c00}
+  #dot.on{background:#0c0}
+  .mach{border:1px solid #333;border-radius:6px;padding:4px 8px;display:flex;gap:6px;align-items:center}
+  .mach .nm{font-weight:bold;min-width:52px}
+  .mach .st{width:10px;height:10px;border-radius:50%;background:#555}
+  .mach .st.on{background:#0c0}
+  .mach .st.off{background:#c00}
+  .pw{background:#7a1f1f !important}
+  .rst{background:#7a5a1f !important}
+  .off{background:#5a1f1f !important}
+  #wrap{position:relative;width:100%;height:calc(100% - 46px);background:#000;overflow:hidden}
+  #screen{width:100%;height:100%;object-fit:contain;cursor:crosshair}
+  #hint{color:#888;font-size:12px}
+</style>
+</head>
+<body>
+<div id="bar">
+  <span id="dot"></span><span id="status">connecting</span>
+  <button onclick="document.getElementById('wrap').requestFullscreen()">Fullscreen</button>
+  <button onclick="sendCombo([0xe0,0xe2,0x4c])">Ctrl+Alt+Del</button>
+  <button onclick="sendCombo([0xe3,0x15])">Win+R</button>
+  <button onclick="releaseAll()">Release</button>
+  <span id="machines" style="display:flex;gap:8px;flex-wrap:wrap"></span>
+</div>
+<div id="wrap"><img id="screen" src="/stream" tabindex="0"></div>
+<script>
+const MODS = {
+  ControlLeft:0x01, ShiftLeft:0x02, AltLeft:0x04, MetaLeft:0x08,
+  ControlRight:0x10, ShiftRight:0x20, AltRight:0x40, MetaRight:0x80
+};
+const KEYS = {
+  KeyA:0x04,KeyB:0x05,KeyC:0x06,KeyD:0x07,KeyE:0x08,KeyF:0x09,KeyG:0x0a,KeyH:0x0b,
+  KeyI:0x0c,KeyJ:0x0d,KeyK:0x0e,KeyL:0x0f,KeyM:0x10,KeyN:0x11,KeyO:0x12,KeyP:0x13,
+  KeyQ:0x14,KeyR:0x15,KeyS:0x16,KeyT:0x17,KeyU:0x18,KeyV:0x19,KeyW:0x1a,KeyX:0x1b,
+  KeyY:0x1c,KeyZ:0x1d,
+  Digit1:0x1e,Digit2:0x1f,Digit3:0x20,Digit4:0x21,Digit5:0x22,Digit6:0x23,
+  Digit7:0x24,Digit8:0x25,Digit9:0x26,Digit0:0x27,
+  Enter:0x28,Escape:0x29,Backspace:0x2a,Tab:0x2b,Space:0x2c,
+  Minus:0x2d,Equal:0x2e,BracketLeft:0x2f,BracketRight:0x30,Backslash:0x31,
+  Semicolon:0x33,Quote:0x34,Backquote:0x35,Comma:0x36,Period:0x37,Slash:0x38,
+  CapsLock:0x39,
+  F1:0x3a,F2:0x3b,F3:0x3c,F4:0x3d,F5:0x3e,F6:0x3f,F7:0x40,F8:0x41,F9:0x42,
+  F10:0x43,F11:0x44,F12:0x45,
+  PrintScreen:0x46,ScrollLock:0x47,Pause:0x48,
+  Insert:0x49,Home:0x4a,PageUp:0x4b,Delete:0x4c,End:0x4d,PageDown:0x4e,
+  ArrowRight:0x4f,ArrowLeft:0x50,ArrowDown:0x51,ArrowUp:0x52,
+  NumLock:0x53,NumpadDivide:0x54,NumpadMultiply:0x55,NumpadSubtract:0x56,
+  NumpadAdd:0x57,NumpadEnter:0x58,Numpad1:0x59,Numpad2:0x5a,Numpad3:0x5b,
+  Numpad4:0x5c,Numpad5:0x5d,Numpad6:0x5e,Numpad7:0x5f,Numpad8:0x60,Numpad9:0x61,
+  Numpad0:0x62,NumpadDecimal:0x63,IntlBackslash:0x64,ContextMenu:0x65
+};
+const MIN_HOLD = 25;
+
+let ws = null, mods = 0, keys = [];
+const pressT = {};
+const dot = document.getElementById('dot');
+const statusEl = document.getElementById('status');
+
+function known(code){ return (code in MODS) || (code in KEYS); }
+function connect(){
+  ws = new WebSocket((location.protocol==='https:'?'wss://':'ws://') + location.host + '/ws');
+  ws.onopen = ()=>{ dot.classList.add('on'); statusEl.textContent='connected'; };
+  ws.onclose = ()=>{ dot.classList.remove('on'); statusEl.textContent='disconnected'; setTimeout(connect,1000); };
+  ws.onerror = ()=>{};
+}
+function report(){
+  const a = new Array(8).fill(0);
+  a[0] = mods;
+  for (let i=0;i<Math.min(keys.length,6);i++) a[2+i] = keys[i];
+  return a.map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function send(){ if (ws && ws.readyState===1) ws.send('R ' + report()); }
+function press(code){
+  if (code in MODS){ mods |= MODS[code]; }
+  else if (code in KEYS){ const u=KEYS[code]; if(!keys.includes(u)) keys.push(u); }
+  send();
+}
+function release(code){
+  if (code in MODS){ mods &= ~MODS[code]; }
+  else if (code in KEYS){ const u=KEYS[code]; keys = keys.filter(k=>k!==u); }
+  send();
+}
+function releaseAll(){ mods=0; keys=[]; send(); }
+function sendCombo(seq){
+  for (const u of seq){ if (u>=0xe0 && u<=0xe7) mods |= (1<<(u-0xe0)); else if(!keys.includes(u)) keys.push(u); }
+  send();
+  setTimeout(releaseAll, 60);
+}
+document.addEventListener('keydown', e=>{
+  if (!known(e.code)) return;
+  e.preventDefault();
+  if (e.repeat) return;
+  pressT[e.code] = performance.now();
+  press(e.code);
+});
+document.addEventListener('keyup', e=>{
+  if (!known(e.code)) return;
+  e.preventDefault();
+  const held = performance.now() - (pressT[e.code] || 0);
+  if (held < MIN_HOLD) setTimeout(()=>release(e.code), MIN_HOLD - held);
+  else release(e.code);
+});
+window.addEventListener('blur', releaseAll);
+document.getElementById('screen').addEventListener('click', ()=>{ document.getElementById('screen').focus(); });
+
+async function relay(machine, action, label){
+  if (!confirm(machine + ' : ' + label + ' ?')) return;
+  try {
+    const r = await fetch('/relay/' + machine + '/' + action, {method:'POST', credentials:'same-origin'});
+    const j = await r.json();
+    if (!j.ok) alert('relay failed: ' + JSON.stringify(j) + ' (http ' + r.status + ')');
+  } catch(e){ alert('relay error: ' + e); }
+}
+async function buildMachines(){
+  const box = document.getElementById('machines');
+  try {
+    const st = await (await fetch('/status')).json();
+    box.innerHTML = '';
+    for (const [name, info] of Object.entries(st)){
+      const d = document.createElement('div');
+      d.className = 'mach';
+      const cls = info.online === true ? 'on' : (info.online === false ? 'off' : '');
+      d.innerHTML = '<span class="st ' + cls + '"></span><span class="nm">' + name + '</span>' +
+        '<button class="pw" data-m="' + name + '" data-a="power">Power</button>' +
+        '<button class="rst" data-m="' + name + '" data-a="reset">Reset</button>' +
+        '<button class="off" data-m="' + name + '" data-a="forceoff">ForceOff</button>';
+      box.appendChild(d);
+    }
+    box.querySelectorAll('button').forEach(b=>{
+      b.onclick = ()=> relay(b.dataset.m, b.dataset.a, b.textContent);
+    });
+  } catch(e){}
+}
+buildMachines();
+setInterval(buildMachines, 8000);
+connect();
+</script>
+</body>
+</html>

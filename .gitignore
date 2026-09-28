@@ -1,0 +1,5 @@
+pi/auth.json
+pi/machines.json
+__pycache__/
+*.pyc
+*.log

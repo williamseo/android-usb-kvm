@@ -1,0 +1,6 @@
+id=s20_hid_kvm
+name=S20 USB HID KVM Endpoint
+version=1.0
+versionCode=1
+author=wseo
+description=Expose the phone as a USB HID keyboard to the target, controlled over WiFi. Keeps adb reachable on TCP.
