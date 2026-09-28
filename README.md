@@ -43,6 +43,12 @@ motherboards that have none.
 | 8-channel relay module (active-LOW, opto) + front-panel extension cable | power/reset |
 | (optional) USB Wi-Fi | wireless operation |
 
+## Hardware
+
+![Hardware setup](docs/hardware.jpg)
+
+*Raspberry Pi + HDMI-USB capture dongle + 8-channel relay module, and the Android phone that acts as the USB HID keyboard.*
+
 ## Repository layout
 
 ```
