@@ -26,9 +26,15 @@ DEFAULTS = {"power": 500, "reset": 500, "forceoff": 10000}
 latest = None
 flock = threading.Lock()
 
+BUTTONS = {}
 try:
     with open(CONFIG) as fh:
-        MACHINES = json.load(fh)
+        _cfg = json.load(fh)
+    if isinstance(_cfg, dict) and "machines" in _cfg:
+        MACHINES = _cfg.get("machines", {})
+        BUTTONS = _cfg.get("buttons", {})
+    else:
+        MACHINES = _cfg
 except Exception:
     MACHINES = {"machine1": {"ip": "192.168.1.10", "power": 17, "reset": 27}}
 
@@ -310,6 +316,45 @@ class Handler(BaseHTTPRequestHandler):
                 pass
             self.close_connection = True
 
+
+_btn = {}
+if RELAY_OK and BUTTONS:
+    for _bn, _b in BUTTONS.items():
+        _g = _b.get("gpio")
+        if _g is None:
+            continue
+        try:
+            lgpio.gpio_claim_input(_chip, _g, lgpio.SET_PULL_UP)
+            _btn[_g] = _b
+            print("button ok", _bn, "gpio", _g, flush=True)
+        except Exception as _be:
+            print("button FAIL", _bn, "gpio", _g, _be, flush=True)
+
+
+def _run_actions(actions):
+    for act in actions:
+        if ":" in act:
+            m, a = act.split(":", 1)
+            relay_pulse(m, a, DEFAULTS.get(a, 500))
+
+
+def buttons_loop():
+    last = {g: 1 for g in _btn}
+    cd = {g: 0.0 for g in _btn}
+    while True:
+        now = time.time()
+        for g, b in _btn.items():
+            v = lgpio.gpio_read(_chip, g)
+            if last.get(g, 1) == 1 and v == 0 and (now - cd[g]) > 0.3:
+                cd[g] = now
+                print("button gpio", g, "->", b.get("action"), flush=True)
+                _run_actions(b.get("action", []))
+            last[g] = v
+        time.sleep(0.03)
+
+
+if _btn:
+    threading.Thread(target=buttons_loop, daemon=True).start()
 
 threading.Thread(target=capture, daemon=True).start()
 ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()

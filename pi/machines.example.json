@@ -1,6 +1,12 @@
 {
-  "b550": { "ip": "192.168.1.10", "power": 14, "reset": 15 },
-  "3090": { "ip": "192.168.1.11", "power": 23, "reset": 24 },
-  "spare1": { "ip": null, "power": 17, "reset": 27 },
-  "spare2": { "ip": null, "power": 5,  "reset": 6 }
+  "machines": {
+    "b550": { "ip": "192.168.1.10", "power": 14, "reset": 15 },
+    "3090": { "ip": "192.168.1.11", "power": 23, "reset": 24 },
+    "spare1": { "ip": null, "power": 17, "reset": 27 },
+    "spare2": { "ip": null, "power": 5,  "reset": 6 }
+  },
+  "buttons": {
+    "case_power_1": { "gpio": 16, "action": ["b550:power"] },
+    "case_power_2": { "gpio": 20, "action": ["3090:power"] }
+  }
 }
