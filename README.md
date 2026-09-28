@@ -98,6 +98,9 @@ sudo cp pi/deploy/kvm-web.service /etc/systemd/system/kvm-web.service
 #   -> edit WorkingDirectory / ExecStart paths for your user
 sudo systemctl daemon-reload
 sudo systemctl enable --now kvm-web
+# tell the Pi where the phone's control daemon is (default 192.168.1.50):
+echo 'KVM_PHONE=192.168.1.50' | sudo tee /etc/default/kvm-web
+sudo systemctl restart kvm-web
 
 # open http://<pi>:8080/  (login with auth.json)
 ```

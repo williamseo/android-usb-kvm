@@ -14,8 +14,8 @@ DEV = "/dev/video0"
 WIDTH = 1920
 HEIGHT = 1080
 PORT = 8080
-PHONE_HOST = "192.168.200.20"
-PHONE_PORT = 4711
+PHONE_HOST = os.environ.get("KVM_PHONE", "192.168.1.50")
+PHONE_PORT = int(os.environ.get("KVM_PHONE_PORT", "4711"))
 WS_MAGIC = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 HERE = os.path.dirname(os.path.abspath(__file__))
 CONFIG = os.path.join(HERE, "machines.json")
@@ -30,7 +30,7 @@ try:
     with open(CONFIG) as fh:
         MACHINES = json.load(fh)
 except Exception:
-    MACHINES = {"b550": {"ip": "192.168.200.67", "power": 17, "reset": 27}}
+    MACHINES = {"machine1": {"ip": "192.168.1.10", "power": 17, "reset": 27}}
 
 try:
     with open(AUTH_FILE) as fh:

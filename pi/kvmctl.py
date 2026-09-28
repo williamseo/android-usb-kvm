@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
+import os
 import socket
 import sys
 import time
 
-PHONE = ("192.168.200.20", 4711)
+PHONE = (os.environ.get("KVM_PHONE", "192.168.1.50"),
+         int(os.environ.get("KVM_PHONE_PORT", "4711")))
 
 LETTERS = "abcdefghijklmnopqrstuvwxyz"
 DIGITS = "1234567890"

@@ -11,6 +11,8 @@ Restart=always
 RestartSec=5
 User=wseo
 Environment=PYTHONUNBUFFERED=1
+# Local (uncommitted) settings, e.g. KVM_PHONE=192.168.1.50
+EnvironmentFile=-/etc/default/kvm-web
 
 [Install]
 WantedBy=multi-user.target
