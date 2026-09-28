@@ -5,6 +5,10 @@ input), and use a **Raspberry Pi** as the brain: **HDMI capture (video)**, **rel
 **web UI**, and **remote access**. Basically a budget replacement for a BMC/IPMI iKVM on consumer
 motherboards that have none.
 
+![KVM web UI](docs/screenshot.png)
+
+*Live screen + keyboard (click to focus) + per-machine Power / Reset / Force-Off buttons and status.*
+
 ```
                  ┌───────────── browser (LAN / Tailscale VPN) ──────────────┐
                  ▼                                                          │
