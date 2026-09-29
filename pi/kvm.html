@@ -19,6 +19,7 @@
   .pw{background:#7a1f1f !important}
   .rst{background:#7a5a1f !important}
   .off{background:#5a1f1f !important}
+  .sd{background:#7a4a1f !important}
   #wrap{position:relative;width:100%;height:calc(100% - 46px);background:#000;overflow:hidden}
   #screen{width:100%;height:100%;object-fit:contain;cursor:crosshair}
   #hint{color:#888;font-size:12px}
@@ -114,6 +115,14 @@ document.addEventListener('keyup', e=>{
 window.addEventListener('blur', releaseAll);
 document.getElementById('screen').addEventListener('click', ()=>{ document.getElementById('screen').focus(); });
 
+async function doShutdown(machine){
+  if (!confirm(machine + ' : graceful SHUTDOWN via ssh ?')) return;
+  try {
+    const r = await fetch('/shutdown/' + machine, {method:'POST', credentials:'same-origin'});
+    const j = await r.json();
+    if (!j.ok) alert('shutdown failed: ' + JSON.stringify(j) + ' (http ' + r.status + ')');
+  } catch(e){ alert('shutdown error: ' + e); }
+}
 async function relay(machine, action, label){
   if (!confirm(machine + ' : ' + label + ' ?')) return;
   try {
@@ -134,11 +143,12 @@ async function buildMachines(){
       d.innerHTML = '<span class="st ' + cls + '"></span><span class="nm">' + name + '</span>' +
         '<button class="pw" data-m="' + name + '" data-a="power">Power</button>' +
         '<button class="rst" data-m="' + name + '" data-a="reset">Reset</button>' +
+        '<button class="sd" data-m="' + name + '" data-a="shutdown">Shutdown</button>' +
         '<button class="off" data-m="' + name + '" data-a="forceoff">ForceOff</button>';
       box.appendChild(d);
     }
     box.querySelectorAll('button').forEach(b=>{
-      b.onclick = ()=> relay(b.dataset.m, b.dataset.a, b.textContent);
+      b.onclick = ()=>{ if (b.dataset.a === 'shutdown') doShutdown(b.dataset.m); else relay(b.dataset.m, b.dataset.a, b.textContent); };
     });
   } catch(e){}
 }

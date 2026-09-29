@@ -84,6 +84,23 @@ def relay_pulse(machine, action, ms):
     return True
 
 
+SSH_USER = "wseo"
+
+
+def remote_shutdown(machine):
+    ip = MACHINES.get(machine, {}).get("ip")
+    if not ip:
+        return False
+    try:
+        r = subprocess.run(
+            ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=5",
+             "%s@%s" % (SSH_USER, ip), "sudo", "-n", "/sbin/shutdown", "-h", "now"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=15)
+        return r.returncode == 0
+    except Exception:
+        return False
+
+
 def machine_status():
     out = {}
     for name, cfg in MACHINES.items():
@@ -218,6 +235,14 @@ class Handler(BaseHTTPRequestHandler):
                 ok = relay_pulse(machine, action, ms)
                 self.send_json({"ok": ok, "machine": machine,
                                 "action": action, "ms": ms})
+                return
+            self.send_json({"ok": False, "error": "bad path"})
+            return
+        if path.startswith("/shutdown/"):
+            _p = path.strip("/").split("/")
+            if len(_p) == 2:
+                _ok = remote_shutdown(_p[1])
+                self.send_json({"ok": _ok, "machine": _p[1], "action": "shutdown"})
                 return
             self.send_json({"ok": False, "error": "bad path"})
             return
