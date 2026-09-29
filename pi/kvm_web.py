@@ -60,7 +60,8 @@ try:
             if _p is None:
                 continue
             try:
-                lgpio.gpio_claim_output(_chip, _p, 1, lgpio.SET_OPEN_DRAIN)
+                lgpio.gpio_claim_output(_chip, _p, 1,
+                                        lgpio.SET_OPEN_DRAIN | lgpio.SET_PULL_UP)
                 _pins[(_m, _a)] = _p
                 print("relay ok", _m, _a, "gpio", _p, flush=True)
             except Exception as _pe:
